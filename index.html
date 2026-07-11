@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yonda — Read what you love. A reading tutor for real Japanese.</title>
+<meta name="description" content="Photograph any page of real Japanese — manga, a novel, a menu. Yonda finds exactly which words you don't know, teaches them until you prove 100% comprehension, and hands you back your own pages. Readable.">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><circle cx="256" cy="256" r="188" fill="none" stroke="%23C73E2C" stroke-width="52"/><text x="256" y="330" font-family="Hiragino Mincho ProN,serif" font-size="200" font-weight="700" text-anchor="middle" fill="%231E1B16">読</text></svg>'>
+<!-- Optional web fonts. The page works offline without them (system fallbacks). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Shippori+Mincho+B1:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E6; --cream:#FCFAF4; --paper-deep:#EDE5D3;
+    --ink:#1E1B16; --faded:#6E6659;
+    --verm:#C73E2C; --verm-deep:#9E2F20;
+    --charcoal:#26221C;
+    --moss:#5E7A4E; --ochre:#C08A2D; --brick:#9C4A32;
+    --sans:"Instrument Sans",-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --serif:"Newsreader",Georgia,serif;
+    --jp-mincho:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+    --jp-gothic:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN",sans-serif;
+    --maxw:1100px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:clip}
+  a{color:inherit}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .serif{font-family:var(--serif)}
+
+  /* ---------- nav ---------- */
+  nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--paper-deep)}
+  .nav-inner{display:flex;align-items:center;gap:28px;height:64px}
+  .logo{display:flex;align-items:center;color:var(--ink);text-decoration:none}
+  .logo svg{height:26px;width:auto;display:block}
+  .nav-links{display:flex;gap:24px;margin-left:auto;font-weight:500;font-size:15px}
+  .nav-links a{text-decoration:none;color:var(--faded)}
+  .nav-links a:hover{color:var(--ink)}
+  .btn{display:inline-block;background:var(--verm);color:var(--cream);font-family:var(--sans);font-weight:600;font-size:16px;padding:13px 24px;border-radius:8px;text-decoration:none;border:none;cursor:pointer;transition:background .15s ease}
+  .btn:hover{background:var(--verm-deep)}
+  .btn.small{padding:9px 16px;font-size:14px;border-radius:7px}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn.ghost:hover{background:var(--ink);color:var(--cream)}
+
+  /* ---------- hero ---------- */
+  header.hero{padding:84px 0 72px;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:center}
+  .kicker{color:var(--verm);font-weight:600;font-size:15px;letter-spacing:.02em;margin-bottom:18px}
+  .kicker .jp{font-family:var(--jp-mincho);font-weight:700}
+  h1{font-size:clamp(40px,6vw,64px);line-height:1.08;letter-spacing:-.015em;font-weight:700}
+  .hero p.sub{font-family:var(--serif);font-size:20px;line-height:1.55;color:var(--faded);margin:22px 0 30px;max-width:34em}
+  .hero p.sub em{color:var(--ink)}
+  .cta-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .cta-secondary{font-weight:500;font-size:15px;color:var(--faded);text-decoration:none;border-bottom:1px solid var(--paper-deep)}
+  .cta-secondary:hover{color:var(--ink)}
+  .micro{font-size:13.5px;color:var(--faded);margin-top:14px}
+
+  /* hero visual: a photographed page in a viewfinder */
+  .hero-visual{position:relative;justify-self:center}
+  .page-card{background:var(--cream);border:1px solid var(--paper-deep);border-radius:10px;box-shadow:0 24px 60px rgba(30,27,22,.14);width:320px;padding:34px 30px;position:relative}
+  .vtext{writing-mode:vertical-rl;font-family:var(--jp-mincho);font-size:21px;line-height:2.15;letter-spacing:.12em;height:330px;color:var(--ink)}
+  .vtext .known{border-left:3px solid var(--moss);padding-left:2px}
+  .vtext .learning{border-left:3px solid var(--ochre);padding-left:2px}
+  .vtext .new{border-left:3px solid var(--brick);padding-left:2px}
+  .bracket{position:absolute;width:46px;height:46px;border:0 solid var(--verm)}
+  .bracket.tl{top:-14px;left:-14px;border-top-width:7px;border-left-width:7px;border-radius:3px 0 0 0}
+  .bracket.tr{top:-14px;right:-14px;border-top-width:7px;border-right-width:7px;border-radius:0 3px 0 0}
+  .bracket.bl{bottom:-14px;left:-14px;border-bottom-width:7px;border-left-width:7px;border-radius:0 0 0 3px}
+  .bracket.br{bottom:-14px;right:-14px;border-bottom-width:7px;border-right-width:7px;border-radius:0 0 3px 0}
+  .diag-chip{position:absolute;left:-64px;bottom:36px;background:var(--ink);color:var(--cream);border-radius:10px;padding:14px 18px;font-size:14px;font-weight:500;box-shadow:0 14px 34px rgba(30,27,22,.25);width:230px}
+  .diag-chip .pct{font-size:22px;font-weight:700;display:block;margin-bottom:2px}
+  .bar{display:flex;gap:3px;margin-top:10px;height:6px}
+  .bar span{border-radius:3px}
+  .bar .m{background:var(--moss);flex:61}
+  .bar .o{background:var(--ochre);flex:24}
+  .bar .b{background:var(--brick);flex:15}
+
+  /* ---------- social proof ---------- */
+  .proof{border-top:1px solid var(--paper-deep);border-bottom:1px solid var(--paper-deep);background:var(--cream);padding:34px 0}
+  .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .proof q{font-family:var(--serif);font-style:italic;color:var(--faded);font-size:15.5px;display:block}
+  .proof .who{font-size:13px;color:var(--faded);margin-top:8px;opacity:.75}
+  .proof-footer{text-align:center;font-size:14px;font-weight:600;margin-top:24px;letter-spacing:.01em}
+
+  /* ---------- sections ---------- */
+  section{padding:88px 0}
+  .section-kicker{color:var(--verm);font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+  h2{font-size:clamp(28px,4vw,38px);line-height:1.15;letter-spacing:-.01em;font-weight:700;max-width:20em}
+  .lede{font-family:var(--serif);font-size:19px;color:var(--faded);margin-top:16px;max-width:36em}
+
+  /* loop strip */
+  .loop-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:46px;counter-reset:step}
+  .loop-step{background:var(--cream);border:1px solid var(--paper-deep);border-radius:10px;padding:18px 16px 16px;font-size:14px;position:relative}
+  .loop-step::before{counter-increment:step;content:counter(step);position:absolute;top:-12px;left:14px;background:var(--verm);color:var(--cream);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700}
+  .loop-step b{display:block;margin:6px 0 4px;font-size:15px}
+  .loop-step span{color:var(--faded);font-size:13.5px;line-height:1.45;display:block}
+
+  /* feature blocks */
+  .feature{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:54px 0}
+  .feature:nth-child(even) .f-visual{order:-1}
+  .feature h3{font-size:26px;line-height:1.2;letter-spacing:-.01em;margin-bottom:14px}
+  .feature h3 .jp-inline{font-family:var(--jp-mincho)}
+  .feature p{font-family:var(--serif);font-size:17.5px;color:#4A443A;max-width:33em}
+  .feature p em{font-style:italic}
+  .f-visual{display:flex;justify-content:center}
+
+  /* vignette cards */
+  .vign{background:var(--cream);border:1px solid var(--paper-deep);border-radius:12px;box-shadow:0 18px 44px rgba(30,27,22,.10);padding:24px;width:min(360px,100%);font-size:14px}
+  .vign .vh{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faded);margin-bottom:14px}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--paper-deep)}
+  .row:last-child{border-bottom:none}
+  .row .jp{font-family:var(--jp-mincho);font-size:18px;min-width:74px}
+  .row .gloss{color:var(--faded);font-size:13.5px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-left:auto}
+  .dot.m{background:var(--moss)}.dot.o{background:var(--ochre)}.dot.b{background:var(--brick)}
+  .choice{border:1.5px solid var(--paper-deep);border-radius:8px;padding:10px 12px;margin:8px 0;font-family:var(--jp-mincho);font-size:17px;display:flex;justify-content:space-between;align-items:center}
+  .choice.right{border-color:var(--moss);background:color-mix(in srgb,var(--moss) 7%,var(--cream))}
+  .choice.wrong{border-color:var(--brick);background:color-mix(in srgb,var(--brick) 7%,var(--cream))}
+  .choice small{font-family:var(--sans);color:var(--faded);font-size:12px}
+  .reteach{background:var(--paper);border-left:3px solid var(--verm);border-radius:0 8px 8px 0;padding:12px 14px;font-size:13.5px;color:#4A443A;margin-top:12px;font-family:var(--serif)}
+  .reteach .jp-inline{font-family:var(--jp-mincho);font-style:normal}
+  .exam-dots{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 14px}
+  .exam-dots i{width:22px;height:22px;border-radius:6px;background:var(--moss);display:inline-flex;align-items:center;justify-content:center}
+  .exam-dots i::after{content:"";width:10px;height:6px;border-left:2.5px solid var(--cream);border-bottom:2.5px solid var(--cream);transform:rotate(-45deg) translate(1px,-1px)}
+  .quiet{font-size:14px;color:var(--faded)}
+  .shelf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .shelf-item{background:var(--paper);border:1px solid var(--paper-deep);border-radius:8px;aspect-ratio:3/4;display:flex;flex-direction:column;justify-content:space-between;padding:10px}
+  .shelf-item .jp{font-family:var(--jp-mincho);writing-mode:vertical-rl;font-size:13px;color:var(--faded);height:70%}
+  .shelf-item .badge{font-size:10.5px;font-weight:600;color:var(--moss);letter-spacing:.03em}
+  .gloss-pop{background:var(--ink);color:var(--cream);border-radius:9px;padding:12px 14px;font-size:13.5px;margin-top:14px;width:max-content;max-width:100%}
+  .gloss-pop .jp{font-family:var(--jp-mincho);font-size:17px;margin-right:8px}
+  .gloss-pop .state{color:var(--ochre);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-top:3px}
+  ruby{ruby-position:over}
+  rt{font-size:.5em;color:var(--verm);font-family:var(--jp-gothic)}
+  .furi-toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--faded);border:1px solid var(--paper-deep);border-radius:20px;padding:4px 12px;margin-bottom:14px}
+  .furi-toggle .knob{width:26px;height:15px;background:var(--moss);border-radius:8px;position:relative}
+  .furi-toggle .knob::after{content:"";position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--cream)}
+
+  /* ---------- lens (dark band) ---------- */
+  .lens{background:var(--charcoal);color:var(--cream);padding:96px 0}
+  .lens h2{color:var(--cream)}
+  .lens .lede{color:#B7AFA2}
+  .lens-answer{font-family:var(--serif);font-size:26px;line-height:1.4;margin:34px 0 10px;max-width:22em}
+  .lens-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:44px}
+  .lens-card{background:#2F2A23;border:1px solid #3B352C;border-radius:12px;padding:26px}
+  .lens-card b{display:block;font-size:17px;margin-bottom:10px}
+  .lens-card p{font-family:var(--serif);font-size:15.5px;color:#B7AFA2}
+  .lens-close{font-family:var(--serif);font-size:18px;color:#B7AFA2;margin-top:40px;max-width:38em}
+  .lens-close strong{color:var(--cream);font-style:normal}
+
+  /* ---------- pricing ---------- */
+  .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px;align-items:stretch}
+  .plan{background:var(--cream);border:1px solid var(--paper-deep);border-radius:14px;padding:32px 28px;display:flex;flex-direction:column}
+  .plan.featured{border:2px solid var(--verm);box-shadow:0 22px 54px rgba(199,62,44,.13);position:relative}
+  .plan.featured::before{content:"読んだ tier";position:absolute;top:-13px;left:26px;background:var(--verm);color:var(--cream);font-size:12px;font-weight:600;padding:3px 12px;border-radius:12px;font-family:var(--sans)}
+  .plan h3{font-size:15px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faded)}
+  .price{font-size:40px;font-weight:700;letter-spacing:-.02em;margin:10px 0 2px}
+  .price small{font-size:15px;font-weight:500;color:var(--faded);letter-spacing:0}
+  .plan ul{list-style:none;margin:20px 0 26px;flex:1}
+  .plan li{padding:7px 0 7px 26px;position:relative;font-size:15px;color:#4A443A}
+  .plan li::before{content:"";position:absolute;left:2px;top:14px;width:9px;height:5px;border-left:2px solid var(--moss);border-bottom:2px solid var(--moss);transform:rotate(-45deg)}
+  .plan .btn{text-align:center}
+  .price-note{text-align:center;font-family:var(--serif);font-style:italic;color:var(--faded);margin-top:34px;font-size:16px}
+
+  /* ---------- FAQ ---------- */
+  .faq{background:var(--cream);border-top:1px solid var(--paper-deep);border-bottom:1px solid var(--paper-deep)}
+  .faq-list{max-width:780px;margin:40px auto 0}
+  details{border-bottom:1px solid var(--paper-deep)}
+  summary{cursor:pointer;font-weight:600;font-size:17px;padding:20px 34px 20px 4px;list-style:none;position:relative}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";position:absolute;right:8px;top:16px;font-size:24px;font-weight:400;color:var(--verm);transition:transform .15s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details p{font-family:var(--serif);color:#4A443A;padding:0 4px 22px;max-width:44em}
+
+  /* ---------- footer cta ---------- */
+  .footer-cta{text-align:center;padding:110px 0 96px}
+  .footer-cta .jp-hero{font-family:var(--jp-mincho);font-weight:700;font-size:clamp(60px,9vw,96px);line-height:1;display:block;margin-bottom:30px}
+  .footer-cta .jp-hero rt{font-size:.22em}
+  .footer-cta h2{margin:0 auto;max-width:16em}
+  .footer-cta .lede{margin:18px auto 36px}
+  .waitlist{display:flex;gap:10px;justify-content:center;max-width:460px;margin:0 auto 12px;flex-wrap:wrap}
+  .waitlist input{flex:1;min-width:220px;font-family:var(--sans);font-size:16px;padding:13px 16px;border:1.5px solid var(--paper-deep);border-radius:8px;background:var(--cream);color:var(--ink)}
+  .waitlist input:focus{outline:2px solid var(--verm);border-color:transparent}
+  .wl-done{display:none;font-weight:600;color:var(--moss);margin-top:10px}
+
+  footer{background:var(--charcoal);color:#B7AFA2;padding:34px 0;font-size:13.5px}
+  .footer-inner{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  footer .logo svg{height:20px}
+  footer .logo{color:var(--cream)}
+  .footer-links{margin-left:auto;display:flex;gap:18px}
+  .footer-links a{text-decoration:none;color:#B7AFA2}
+  .footer-links a:hover{color:var(--cream)}
+  .made-by{width:100%;opacity:.6;font-family:var(--serif);font-style:italic}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:960px){
+    .hero-grid{grid-template-columns:1fr;gap:64px}
+    .hero-visual{margin-left:40px}
+    .feature{grid-template-columns:1fr;gap:34px;padding:44px 0}
+    .feature:nth-child(even) .f-visual{order:0}
+    .loop-strip{grid-template-columns:repeat(2,1fr);row-gap:24px}
+    .lens-grid,.pricing-grid,.proof-grid{grid-template-columns:1fr}
+    .nav-links{display:none}
+  }
+  @media (max-width:520px){
+    .hero-grid,.feature,.loop-strip{grid-template-columns:minmax(0,1fr)}
+    .hero-visual{margin-left:0;width:100%}
+    .page-card{width:min(320px,calc(100vw - 72px));margin:0 auto}
+    .diag-chip{left:-10px;bottom:24px}
+    .vign{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= NAV ======================= -->
+<nav>
+  <div class="wrap nav-inner">
+    <a class="logo" href="#top" aria-label="Yonda home">
+      <!-- Primary lockup: viewfinder-kanji mark + YONDA wordmark (pure paths, renders offline) -->
+      <svg viewBox="0 0 4007 810" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Yonda">
+        <path fill="currentColor" transform="translate(70 740)" d="M285 0V-303L15 -720H172L392 -351H322L541 -720H685L415 -303V0Z"/>
+        <circle cx="1207" cy="380" r="320" fill="none" stroke="#C73E2C" stroke-width="100"/>
+        <path fill="currentColor" transform="translate(1644 740)" d="M62 0V-720H223L574 -94L537 -85V-720H663V0H502L151 -626L188 -635V0Z"/>
+        <path fill="currentColor" transform="translate(2409 740)" d="M141 0V-104H327Q409 -104 467 -137Q525 -170 555 -229Q586 -288 586 -364Q586 -439 556 -496Q525 -553 467 -584Q410 -616 327 -616H143V-720H327Q445 -720 533 -676Q621 -632 670 -552Q718 -471 718 -362Q718 -253 669 -171Q620 -90 533 -45Q445 0 328 0ZM62 0V-720H192V0Z"/>
+        <path fill="currentColor" transform="translate(3204 740)" d="M28 0 293 -720H405L156 0ZM571 0 323 -720H441L705 0ZM165 -283H559V-179H165Z"/>
+      </svg>
+    </a>
+    <div class="nav-links">
+      <a href="#loop">How it works</a>
+      <a href="#lens">vs. Google Lens</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="btn small" href="#waitlist">Get Yonda for iOS</a>
+  </div>
+</nav>
+
+<!-- ======================= HERO ======================= -->
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="kicker"><span class="jp">読んだ</span> — Japanese for “I read it.”</div>
+      <h1>You bought the manga. Now&nbsp;read&nbsp;it.</h1>
+      <p class="sub">Photograph any page of real Japanese — manga, a novel, a menu, a street sign. Yonda finds exactly which words <em>you</em> don’t know, teaches them until you prove 100% comprehension, and hands you back your own pages. Readable.</p>
+      <div class="cta-row">
+        <a class="btn" href="#waitlist">Get Yonda for iOS — first scan free</a>
+        <a class="cta-secondary" href="#loop">Watch the 30-second demo →</a>
+      </div>
+      <p class="micro">Full N5 course free forever. No credit card. No streak guilt.</p>
+    </div>
+    <div class="hero-visual">
+      <div class="page-card">
+        <div class="bracket tl"></div><div class="bracket tr"></div>
+        <div class="bracket bl"></div><div class="bracket br"></div>
+        <div class="vtext">吾輩は<span class="new">猫</span>である。<br>名前は<span class="learning">まだ</span>無い。<br>どこで<span class="known">生れた</span>か…</div>
+        <div class="diag-chip">
+          <span class="pct">You know 61% of this page.</span>
+          This lesson teaches the other 39% — 14 words, 6 kanji.
+          <div class="bar"><span class="m"></span><span class="o"></span><span class="b"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ======================= SOCIAL PROOF (placeholder strip) ======================= -->
+<!-- PLACEHOLDER STRIP — replace as proof arrives (App Store review, creator quote, beta tester quote). -->
+<div class="proof">
+  <div class="wrap">
+    <div class="proof-grid">
+      <div><q>★★★★★ — [App Store review excerpt]</q><div class="who">[First name], [country]</div></div>
+      <div><q>[Creator quote from partnership video]</q><div class="who">[Creator name], [channel]</div></div>
+      <div><q>[Beta tester quote about the first read-back moment]</q><div class="who">TestFlight beta tester</div></div>
+    </div>
+    <div class="proof-footer">Trusted by learners reading their own bookshelf, not ours.</div>
+  </div>
+</div>
+
+<!-- ======================= THE LOOP ======================= -->
+<section id="loop">
+  <div class="wrap">
+    <div class="section-kicker">A reading tutor for real Japanese</div>
+    <h2>Your shelf is the syllabus.</h2>
+    <p class="lede">Five stages, one promise: the page you photograph is the page you end up reading. No detours through someone else’s curriculum.</p>
+
+    <div class="loop-strip">
+      <div class="loop-step"><b>Photograph</b><span>Up to 5 pages of anything you own — manga, novel, menu.</span></div>
+      <div class="loop-step"><b>Approve the text</b><span>A 30-second fix-it review. Nothing is taught from a misread.</span></div>
+      <div class="loop-step"><b>See your gap</b><span>“You know 61% of this.” The lesson is the other 39%.</span></div>
+      <div class="loop-step"><b>Learn &amp; prove it</b><span>Serious spaced repetition, then a 100% clean-sweep exam.</span></div>
+      <div class="loop-step"><b>Read your pages</b><span>Furigana on demand, tap-to-gloss, translations you’ve earned.</span></div>
+    </div>
+
+    <!-- FEATURE 1 -->
+    <div class="feature">
+      <div>
+        <h3>Point it at the Japanese you actually want to read.</h3>
+        <p>Up to five pages per scan: the tankōbon you bought in Nakano and never opened, chapter one of the novel that defeated you, tonight’s izakaya menu. Yonda’s vision engine handles vertical text, correct reading order, and furigana — the things that break ordinary OCR on real Japanese pages. Then you get a 30-second review pass to fix any misreads, because on stylized manga lettering no machine is perfect and we won’t pretend ours is. You approve the text. Nothing gets taught from a misread.</p>
+      </div>
+      <div class="f-visual">
+        <div class="vign">
+          <div class="vh">Fix-it review · page 1 of 3</div>
+          <div class="row"><span class="jp"><ruby>読<rt>よ</rt></ruby>んだ</span><span class="gloss">block 4 · confirmed</span><span class="dot m"></span></div>
+          <div class="row"><span class="jp">大丈夫</span><span class="gloss">block 5 · confirmed</span><span class="dot m"></span></div>
+          <div class="row"><span class="jp" style="color:var(--verm)">っ → つ</span><span class="gloss">block 6 · you fixed this one</span><span class="dot o"></span></div>
+          <div class="gloss-pop" style="background:var(--paper);color:var(--faded);border:1px dashed var(--paper-deep)">Stylized lettering fools every OCR sometimes. You’re the gate.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURE 2 -->
+    <div class="feature">
+      <div>
+        <h3>It doesn’t teach you the page. It teaches you <em>your gap</em>.</h3>
+        <p>Yonda checks every word and kanji on your pages against your personal knowledge graph — everything you’ve ever studied, reviewed, missed, and mastered in the app. What comes back is a precise diagnosis: these 14 words and 6 kanji are the only things standing between you and this page. Not a generic “N4 vocabulary list.” Your list. Someone else scanning the same page gets a different lesson, because they know different things.</p>
+      </div>
+      <div class="f-visual">
+        <div class="vign">
+          <div class="vh">Diagnosis</div>
+          <div style="font-weight:700;font-size:19px;margin-bottom:4px">You know 87% of this page.</div>
+          <div class="quiet" style="margin-bottom:10px">Here’s the other 13%:</div>
+          <div class="row"><span class="jp">噂</span><span class="gloss">うわさ · rumor</span><span class="dot b"></span></div>
+          <div class="row"><span class="jp">確かめる</span><span class="gloss">たしかめる · to confirm</span><span class="dot b"></span></div>
+          <div class="row"><span class="jp">約束</span><span class="gloss">やくそく · promise</span><span class="dot o"></span></div>
+          <div class="bar" style="margin-top:14px"><span class="m" style="flex:87"></span><span class="o" style="flex:8"></span><span class="b" style="flex:5"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURE 3 -->
+    <div class="feature">
+      <div>
+        <h3>Then it drills that gap like it means it.</h3>
+        <p>The lesson is serious spaced repetition, not a matching mini-game. FSRS scheduling brings each item back right before you’d forget it. Wrong-answer options come from real confusability data — the kanji people genuinely mix up with <span class="jp-inline">読</span>, not three random strangers — so every question actually tests something. And when you miss, you don’t get a red X and a sad noise. You get re-taught, inline, on the spot. Missing is how learning works; we built for it.</p>
+      </div>
+      <div class="f-visual">
+        <div class="vign">
+          <div class="vh">Which one means “to buy”?</div>
+          <div class="choice wrong">貝 <small>your answer</small></div>
+          <div class="choice right">買 <small>correct</small></div>
+          <div class="choice">売 <small></small></div>
+          <div class="choice">読 <small></small></div>
+          <div class="reteach">Not this one — <span class="jp-inline">買</span> is <em>buy</em>. <span class="jp-inline">貝</span> is <em>shellfish</em>; it’s the radical inside. Look again.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURE 4 -->
+    <div class="feature">
+      <div>
+        <h3>100% or it isn’t comprehension.</h3>
+        <p>Before Yonda unlocks your pages, you pass a clean-sweep exam on everything the scan taught you. Not 80%. Not “good enough.” Every word, every kanji, one clean pass. That sounds strict because it is: partial comprehension of a page is just decorated guessing. When you walk into the read-back, you walk in knowing you’ve earned it — and that feeling is the entire product.</p>
+      </div>
+      <div class="f-visual">
+        <div class="vign">
+          <div class="vh">Comprehension exam</div>
+          <div style="font-weight:700;font-size:22px">20 / 20</div>
+          <div class="exam-dots">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <div class="quiet">Your pages are unlocked. <span style="color:var(--ink);font-weight:600">Go read them.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURE 5 -->
+    <div class="feature">
+      <div>
+        <h3>The payoff: your pages, your eyes, no crutches you didn’t earn.</h3>
+        <p>Now you read. Your actual photographs, with a furigana toggle when you want training wheels and a tap on any word for a gloss colored by your mastery. Translations exist — but they unlock only after you’ve passed, as a check on your understanding rather than a substitute for it. This is the moment translation apps sell you and never deliver: not “here’s what it says,” but <em>you, reading Japanese.</em></p>
+      </div>
+      <div class="f-visual">
+        <div class="vign">
+          <div class="furi-toggle"><span class="knob"></span> furigana on</div>
+          <div style="font-family:var(--jp-mincho);font-size:22px;line-height:2">
+            <ruby>昨日<rt>きのう</rt></ruby>、この<ruby>本<rt>ほん</rt></ruby>を<ruby>読<rt>よ</rt></ruby>んだ。
+          </div>
+          <div class="gloss-pop"><span class="jp">約束</span> yakusoku — promise<span class="state">learning · next review in 2 days</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURE 6 -->
+    <div class="feature">
+      <div>
+        <h3>Shelf: the Japanese you’ve conquered.</h3>
+        <p>Every scan you finish joins your shelf — a growing library of real pages you can now read, re-read, and show someone. And the words you learned don’t retire when the scan ends: they enter your long-term review queue and keep coming back on the FSRS schedule, woven in with the full zero-to-N1 curriculum underneath. Six months from now you won’t remember studying that word. You’ll just read it.</p>
+      </div>
+      <div class="f-visual">
+        <div class="vign">
+          <div class="vh">Shelf · 7 pages conquered</div>
+          <div class="shelf-grid">
+            <div class="shelf-item"><span class="jp">第一巻・四頁</span><span class="badge">読んだ ✓</span></div>
+            <div class="shelf-item"><span class="jp">夜の食堂メニュー</span><span class="badge">読んだ ✓</span></div>
+            <div class="shelf-item"><span class="jp">手紙・二枚</span><span class="badge">読んだ ✓</span></div>
+          </div>
+          <div class="quiet" style="margin-top:12px">42 scanned words in long-term review</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= VS LENS ======================= -->
+<section class="lens" id="lens">
+  <div class="wrap">
+    <div class="section-kicker">The honest question</div>
+    <h2>“Can’t I just use Google Lens?”</h2>
+    <p class="lens-answer serif">You can. You have been. <em>How’s your Japanese?</em></p>
+    <p class="lede">That’s the honest difference. Lens — and every camera-translate app — answers the question <em>“what does this say?”</em> Yonda answers <em>“why can’t I read this yet, and how do I fix that?”</em> They’re opposite products:</p>
+    <div class="lens-grid">
+      <div class="lens-card">
+        <b>Lens does the reading for you.</b>
+        <p>Every time it translates a bubble, it takes the rep you needed. That’s why you can use it for years and still be illiterate in Japanese — the tool absorbs the practice.</p>
+      </div>
+      <div class="lens-card">
+        <b>Yonda makes you do the reading.</b>
+        <p>It diagnoses what you’re missing, teaches exactly that, verifies comprehension at 100%, and only then lets you at the translation — as an answer key, not a bypass.</p>
+      </div>
+      <div class="lens-card">
+        <b>Lens forgets you instantly.</b>
+        <p>Yonda remembers every word you’ve ever learned and schedules it back into your life for as long as it takes.</p>
+      </div>
+    </div>
+    <p class="lens-close serif">Use Lens for train-station signs when you’re lost. <strong>Use Yonda when you’d rather stop needing it.</strong></p>
+  </div>
+</section>
+
+<!-- ======================= PRICING ======================= -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-kicker">Pricing</div>
+    <h2>Simple pricing. Nothing rides on your guilt.</h2>
+    <div class="pricing-grid">
+      <div class="plan">
+        <h3>Free</h3>
+        <div class="price">$0 <small>forever</small></div>
+        <ul>
+          <li>The complete N5 course — kana, kanji, vocabulary, grammar. Polished, not a teaser.</li>
+          <li>Serious spaced repetition on everything you study.</li>
+          <li>One lifetime trial scan of Scan &amp; Read. Bring a real page. See what happens.</li>
+          <li>No ads, no data selling, no nagging.</li>
+        </ul>
+        <a class="btn ghost" href="#waitlist">Start free</a>
+      </div>
+      <div class="plan featured">
+        <h3>Pro</h3>
+        <div class="price">$12 <small>/ month</small></div>
+        <div style="font-family:var(--sans);font-size:14px;margin:-6px 0 10px;opacity:.75">or <strong>$79.99/year</strong> — $6.67 a month, save 44%</div>
+        <ul>
+          <li>Everything in Free.</li>
+          <li>About 20 scans a month — up to 5 pages each, roughly a chapter a week.</li>
+          <li>The full Shelf and long-term reviews on every scanned word.</li>
+          <li>AI conversation practice.</li>
+        </ul>
+        <a class="btn" href="#waitlist">Go Pro</a>
+      </div>
+      <div class="plan">
+        <h3>Lifetime</h3>
+        <div class="price">$199.99 <small>once</small></div>
+        <ul>
+          <li>Everything in Pro. Pay once, own it.</li>
+          <li>For people planning to still be reading Japanese in ten years — which, if the last app didn’t kill your motivation, is you.</li>
+        </ul>
+        <a class="btn ghost" href="#waitlist">Buy once</a>
+      </div>
+    </div>
+    <p class="price-note">Cancel anytime in two taps. No win-back tricks. If Yonda isn’t making you a better reader, we haven’t earned the $12.</p>
+  </div>
+</section>
+
+<!-- ======================= FAQ ======================= -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="section-kicker">Questions, answered plainly</div>
+    <h2>FAQ</h2>
+    <div class="faq-list">
+      <details>
+        <summary>Is my manga photo private?</summary>
+        <p>Yes. Your photos go to a private storage bucket only your account can access. They are never shared, never used to train anything, never seen by other users, and they’re deleted when you delete the scan. Your bookshelf is your business.</p>
+      </details>
+      <details>
+        <summary>How good is the OCR on manga, honestly?</summary>
+        <p>Good, with honest edges. The vision engine reads vertical text, correct panel/bubble order, and furigana reliably on printed pages. Heavily stylized lettering, handwriting, and low-light photos can still produce misreads — which is exactly why every scan includes a 30-second review where you confirm or fix the text before anything is taught. You are the final gate. Nothing enters your lessons that you haven’t approved.</p>
+      </details>
+      <details>
+        <summary>Do I need to know kana first?</summary>
+        <p>Yes. Scan &amp; Read assumes you can read hiragana and katakana — that’s the honest floor, and we won’t pretend a camera removes it. If you’re not there yet, the free N5 course starts at literally the first kana and gets you to the floor properly. Then scan.</p>
+      </details>
+      <details>
+        <summary>I’m a complete beginner. Is Yonda for me?</summary>
+        <p>Yes, via the front door: the free N5 course takes you from zero. Your first scan will be more satisfying after a few weeks of foundations — a page where you know 80% and learn the rest beats a page that’s 95% unknown.</p>
+      </details>
+      <details>
+        <summary>Is scanning pages I own legal?</summary>
+        <p>Photographing pages you own for your personal study is exactly the kind of private use copyright law contemplates. Your scans are private to you; Yonda never republishes, shares, or redistributes them.</p>
+      </details>
+      <details>
+        <summary>How many pages per scan, and what counts as a scan?</summary>
+        <p>Up to 5 pages photographed in one go = one scan. Pro includes about 20 scans a month — call it a chapter a week with room to spare for menus.</p>
+      </details>
+      <details>
+        <summary>Does it work offline?</summary>
+        <p>Studying, reviews, and reading your unlocked scans: yes. The scanning step itself needs a connection — the heavy OCR and diagnosis run server-side. Photograph the menu now, study on the flight home.</p>
+      </details>
+      <details>
+        <summary>How is this different from Anki or WaniKani?</summary>
+        <p>Same respect for spaced repetition, different source of truth. Their content is a deck someone else built. Yonda’s flagship content is whatever <em>you</em> photographed, diagnosed against what <em>you</em> already know — plus a full structured zero-to-N1 curriculum underneath, so you’re never choosing between rigor and relevance.</p>
+      </details>
+      <details>
+        <summary>Android? Web?</summary>
+        <p>iOS first — it’s where we can make the camera-to-lesson loop excellent. Android and web share the codebase and are planned, but we won’t ship them half-good. No date promises we can’t keep.</p>
+      </details>
+      <details>
+        <summary>What happens to my words when a scan is done?</summary>
+        <p>They stay yours. Every word you learn from a scan enters your long-term review queue on the FSRS schedule, alongside your curriculum items. The scan ends; the knowledge doesn’t.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FOOTER CTA / WAITLIST ======================= -->
+<section class="footer-cta" id="waitlist">
+  <div class="wrap">
+    <span class="jp-hero"><ruby>読<rt>よ</rt></ruby>んだ</span>
+    <h2>Somewhere on your shelf is a book you bought in Japanese.</h2>
+    <p class="lede">It’s been patient. One page tonight — photograph it, learn what’s actually in your way, and read it back before bed.</p>
+    <!-- WAITLIST PLACEHOLDER: point this form at your provider (Buttondown / Formspree / Tally / ConvertKit).
+         e.g. <form action="https://buttondown.email/api/emails/embed-subscribe/yonda" method="post"> -->
+    <form class="waitlist" onsubmit="event.preventDefault();this.style.display='none';document.getElementById('wl-done').style.display='block';">
+      <input type="email" required placeholder="you@example.com" aria-label="Email address">
+      <button class="btn" type="submit">Join the waitlist</button>
+    </form>
+    <div class="wl-done" id="wl-done">You’re on the list. First scan’s on us when we open the doors.</div>
+    <p class="micro" style="margin-top:16px">Or get the beta now: <a href="#" style="color:var(--verm-deep);font-weight:600">Yonda for iOS on TestFlight →</a></p>
+  </div>
+</section>
+
+<!-- ======================= FOOTER ======================= -->
+<footer>
+  <div class="wrap footer-inner">
+    <a class="logo" href="#top" aria-label="Yonda">
+      <svg viewBox="0 0 4007 810" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Yonda">
+        <path fill="currentColor" transform="translate(70 740)" d="M285 0V-303L15 -720H172L392 -351H322L541 -720H685L415 -303V0Z"/>
+        <circle cx="1207" cy="380" r="320" fill="none" stroke="#C73E2C" stroke-width="100"/>
+        <path fill="currentColor" transform="translate(1644 740)" d="M62 0V-720H223L574 -94L537 -85V-720H663V0H502L151 -626L188 -635V0Z"/>
+        <path fill="currentColor" transform="translate(2409 740)" d="M141 0V-104H327Q409 -104 467 -137Q525 -170 555 -229Q586 -288 586 -364Q586 -439 556 -496Q525 -553 467 -584Q410 -616 327 -616H143V-720H327Q445 -720 533 -676Q621 -632 670 -552Q718 -471 718 -362Q718 -253 669 -171Q620 -90 533 -45Q445 0 328 0ZM62 0V-720H192V0Z"/>
+        <path fill="currentColor" transform="translate(3204 740)" d="M28 0 293 -720H405L156 0ZM571 0 323 -720H441L705 0ZM165 -283H559V-179H165Z"/>
+      </svg>
+    </a>
+    <div class="footer-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="mailto:support@yonda.study">Support</a>
+    </div>
+    <div class="made-by">Made by one person who also couldn’t read his bookshelf.</div>
+  </div>
+</footer>
+
+</body>
+</html>
