@@ -24,8 +24,8 @@
     --maxw:1100px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:clip}
+  html{scroll-behavior:smooth;overflow-x:hidden;max-width:100%}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100%}
   a{color:inherit}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
   .serif{font-family:var(--serif)}
@@ -43,6 +43,8 @@
   .btn.small{padding:9px 16px;font-size:14px;border-radius:7px}
   .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
   .btn.ghost:hover{background:var(--ink);color:var(--cream)}
+  .btn.store-pending{background:var(--charcoal);opacity:.55;cursor:not-allowed}
+  .btn.store-pending:hover{background:var(--charcoal)}
 
   /* ---------- hero ---------- */
   header.hero{padding:84px 0 72px;overflow:hidden}
@@ -267,7 +269,10 @@
 </header>
 
 <!-- ======================= SOCIAL PROOF (placeholder strip) ======================= -->
-<!-- PLACEHOLDER STRIP — replace as proof arrives (App Store review, creator quote, beta tester quote). -->
+<!-- STILL A PLACEHOLDER as of 2026-07-16 — this was live with literal "[bracketed]" template
+     text visible to real visitors, so it's hidden until real quotes exist. Swap in real copy
+     (App Store review excerpt, creator quote, beta tester quote) and remove this comment wrapper
+     to bring the strip back.
 <div class="proof">
   <div class="wrap">
     <div class="proof-grid">
@@ -278,6 +283,7 @@
     <div class="proof-footer">Trusted by learners reading their own bookshelf, not ours.</div>
   </div>
 </div>
+-->
 
 <!-- ======================= THE LOOP ======================= -->
 <section id="loop">
@@ -529,14 +535,23 @@
     <span class="jp-hero"><ruby>読<rt>よ</rt></ruby>んだ</span>
     <h2>Somewhere on your shelf is a book you bought in Japanese.</h2>
     <p class="lede">It’s been patient. One page tonight — photograph it, learn what’s actually in your way, and read it back before bed.</p>
-    <!-- WAITLIST PLACEHOLDER: point this form at your provider (Buttondown / Formspree / Tally / ConvertKit).
-         e.g. <form action="https://buttondown.email/api/emails/embed-subscribe/yonda" method="post"> -->
-    <form class="waitlist" onsubmit="event.preventDefault();this.style.display='none';document.getElementById('wl-done').style.display='block';">
+    <!-- APP STORE CTA — submitted to App Review 2026-07-15, awaiting approval.
+         TO GO LIVE once Apple approves the app, make these 3 edits:
+           1. class="btn store-pending" -> class="btn"  (drops the disabled look)
+           2. "Coming soon to the App Store" -> "Download on the App Store"
+           3. href="#" aria-disabled="true" onclick="return false;" -> href="https://apps.apple.com/app/id<APP_ID>"
+         No other changes needed — the email capture below can stay or be removed. -->
+    <a class="btn store-pending" href="#" aria-disabled="true" onclick="return false;">Coming soon to the App Store</a>
+    <p class="micro" style="margin-top:10px">Submitted for App Review — launching soon.</p>
+
+    <!-- Lightweight launch-notify capture. Not wired to a real ESP yet (client-side only,
+         same as before) — point the form action at Buttondown / Formspree / Tally / ConvertKit
+         when you want real emails captured. -->
+    <form class="waitlist" style="margin-top:26px" onsubmit="event.preventDefault();this.style.display='none';document.getElementById('wl-done').style.display='block';">
       <input type="email" required placeholder="you@example.com" aria-label="Email address">
-      <button class="btn" type="submit">Join the waitlist</button>
+      <button class="btn ghost" type="submit">Notify me at launch</button>
     </form>
-    <div class="wl-done" id="wl-done">You’re on the list. First scan’s on us when we open the doors.</div>
-    <p class="micro" style="margin-top:16px">Or get the beta now: <a href="#" style="color:var(--verm-deep);font-weight:600">Yonda for iOS on TestFlight →</a></p>
+    <div class="wl-done" id="wl-done">You’re set — we’ll email you the moment Yonda is live.</div>
   </div>
 </section>
 
